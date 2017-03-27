@@ -37,9 +37,25 @@ open class UniFunction(val name : String, val f : (Double) -> Double, val subFun
     }
 }
 
-class Sine(a : GPFunction) : UniFunction("sin", {Math.sin(it)}, a)
+class Sin(a : GPFunction) : UniFunction("sin", {Math.sin(it)}, a)
 
-open class BiFunction(val name : String, val f : (Double, Double) -> Double, val left: GPFunction, val right: GPFunction) : GPFunction(left.numConstants + right.numConstants) {
+class Log(a : GPFunction) : UniFunction("log", {Math.log(it)}, a)
+
+
+open class BiFunction(val name : String, val f : (Double, Double) -> Double, origLeft: GPFunction, origRight: GPFunction, val swapIfRightIsConstant : Boolean = false) : GPFunction(origLeft.numConstants + origRight.numConstants) {
+    val left : GPFunction
+    val right : GPFunction
+
+    init {
+        if (swapIfRightIsConstant && origRight is C && origLeft !is C) {
+            left = origRight
+            right = origLeft
+        } else {
+            left = origLeft
+            right = origRight
+        }
+    }
+
     override val size: Int
         get() = 1 + left.size + right.size
 
@@ -67,10 +83,10 @@ open class BiFunction(val name : String, val f : (Double, Double) -> Double, val
 }
 
 infix operator fun GPFunction.plus(b : GPFunction) = Plus(this, b)
-class Plus(a : GPFunction, b: GPFunction) : BiFunction("+", { a, b -> a+b}, a, b)
+class Plus(a : GPFunction, b: GPFunction) : BiFunction("+", { a, b -> a+b}, a, b, true)
 
 infix operator fun GPFunction.times(b : GPFunction) = Times(this, b)
-class Times(a : GPFunction, b: GPFunction) : BiFunction("*", { a, b -> a * b}, a, b)
+class Times(a : GPFunction, b: GPFunction) : BiFunction("*", { a, b -> a * b}, a, b, true)
 
 infix fun GPFunction.pow(b : GPFunction) = Pow(this, b)
 class Pow(a : GPFunction, b: GPFunction) : BiFunction("^", {a, b -> Math.pow(a, b)}, a, b)
@@ -80,7 +96,7 @@ class C : GPFunction(1) {
 
     override fun toString(constants: List<Double>, parameters: List<String>): String {
         assert(constants.size == 1)
-        return "${doubleShortener.format(constants[0])}"
+        return doubleShortener.format(constants[0])
     }
 
     override fun value(constants: List<Double>, parameters: List<Double>): Double {

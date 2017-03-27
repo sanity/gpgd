@@ -59,7 +59,9 @@ class MutateSpec : FreeSpec() {
                     for (mutator in allMutators(1)) {
                         "${mutator::class.simpleName}" {
                             val mutation = mutator.mutate(emptyList(), origFunction)
-                            mutation.mFun.value(mutation.newConstants, listOf(2.0)) shouldBe (2.0 plusOrMinus tolerance)
+                            if (mutation != null) {
+                                mutation.mFun.value(mutation.newConstants, listOf(2.0)) shouldBe (2.0 plusOrMinus tolerance)
+                            }
                         }
                     }
                 }

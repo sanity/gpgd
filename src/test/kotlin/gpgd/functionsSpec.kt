@@ -8,8 +8,8 @@ import io.kotlintest.specs.FreeSpec
 
 class FunctionsSpec : FreeSpec() {
     init {
-        "Sine" {
-            Sine(C()).value(listOf(0.3), emptyList()) shouldEqual (Math.sin(0.3) plusOrMinus 0.00001)
+        "Sin" {
+            Sin(C()).value(listOf(0.3), emptyList()) shouldEqual (Math.sin(0.3) plusOrMinus 0.00001)
         }
         "Plus" {
             Plus(C(), C()).value(listOf(1.0, 2.0), emptyList()) shouldEqual (3.0 plusOrMinus 0.00001)

@@ -43,7 +43,6 @@ fun allMutators(parameters: Int): List<Mutator> {
     l += CollapseLeftBiFunMutator()
     l += CollapsRightBiFunMutator()
     l += SwapBiFunMutator()
-    l += AddZeroMutator()
     l += PowOfOneMutator()
     l += MultByOneMutator()
     l += DoubleThenHalveMutator()
@@ -64,12 +63,16 @@ fun allMutators(parameters: Int): List<Mutator> {
     l += AddTermPowRMutator(C(), listOf(0.5))
     l += AddTermMultMutator(C(), listOf(-1.0))
     l += AddTermMultMutator(C(), listOf(0.5))
+    l += ReplaceWithConstantMutator()
+    l += AddUniFunMutator(::Sin)
+    l += AddUniFunMutator(::Log)
+
 
 /*
-    l += UniFunctionInsertingMutator("Sine/AddTermMultByZeroMutator", ::Sine, ::AddTermPlusMutator)
-    l += UniFunctionInsertingMutator("Sine/AddTermMultByOneMutator", ::Sine, ::AddTermMultMutator)
-    l += UniFunctionInsertingMutator("Sine/AddTermPowOfOneMutator", ::Sine, ::AddTermPowMutator)
-    l += UniFunctionInsertingMutator("Sine/AddTermPowOfOneMutator", ::Sine, ::AddTermPowRMutator)
+    l += UniFunctionInsertingMutator("Sin/AddTermMultByZeroMutator", ::Sin, ::AddTermPlusMutator)
+    l += UniFunctionInsertingMutator("Sin/AddTermMultByOneMutator", ::Sin, ::AddTermMultMutator)
+    l += UniFunctionInsertingMutator("Sin/AddTermPowOfOneMutator", ::Sin, ::AddTermPowMutator)
+    l += UniFunctionInsertingMutator("Sin/AddTermPowOfOneMutator", ::Sin, ::AddTermPowRMutator)
 */
     return l
 }
@@ -80,12 +83,6 @@ interface Mutator {
 
 data class MutatedFun(val mFun: GPFunction, val newConstants: List<Double>)
 
-class AddZeroMutator : Mutator {
-    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
-        return MutatedFun(f + C(), const + 0.0)
-    }
-}
-
 class CollapseUniFunMutator : Mutator {
     override fun mutate(const: List<Double>, f: GPFunction): MutatedFun? {
         if (f is UniFunction) {
@@ -94,7 +91,19 @@ class CollapseUniFunMutator : Mutator {
             return null
         }
     }
+}
 
+class AddUniFunMutator(val uniFunCreator : (GPFunction) -> GPFunction) : Mutator {
+    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
+        return MutatedFun(uniFunCreator(f), const)
+    }
+
+}
+
+class ReplaceWithConstantMutator : Mutator {
+    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun? {
+        return MutatedFun(C(), listOf(0.1))
+    }
 }
 
 class SwapBiFunMutator : Mutator {
@@ -128,18 +137,6 @@ class CollapsRightBiFunMutator : Mutator {
     }
 }
 
-class UniFunctionInsertingMutator(val name: String, val uniFunctionFactory: (GPFunction) -> GPFunction, val termAdder: (GPFunction, List<Double>) -> Mutator) : Mutator {
-    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun? {
-        val termToAdd = uniFunctionFactory(f)
-        val mutatedFunction = termAdder(termToAdd, DoubleArray(termToAdd.numConstants, { 0.1 }).asList()).mutate(const, f)
-        return mutatedFunction
-    }
-
-    override fun toString(): String {
-        return "UniFunctionInsertingMutator($name)"
-    }
-}
-
 class AddTermPlusMutator(val term : GPFunction, val termConstants: List<Double>) : Mutator {
     override fun mutate(const: List<Double>, f: GPFunction): MutatedFun? {
         return MutatedFun(f + term, const + termConstants)
@@ -164,16 +161,6 @@ class AddTermPowRMutator(val term : GPFunction, val termConstants: List<Double>)
     }
 }
 
-class AddTermMultByZeroMutator(val term: GPFunction, val termConstants: List<Double>) : Mutator {
-    init {
-        assert(term.numConstants == termConstants.size)
-    }
-
-    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
-        return MutatedFun(f + (C() * term), const + 0.0 + termConstants)
-    }
-}
-
 class PowOfOneMutator() : Mutator {
     override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
         return MutatedFun(f pow C(), const + 1.0)
@@ -191,26 +178,6 @@ class NegateMutator() : Mutator {
 class MultByOneMutator() : Mutator {
     override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
         return MutatedFun(f * C(), const + 1.0)
-    }
-}
-
-class AddTermMultByOneMutator(val term: GPFunction, val termConstants: List<Double>) : Mutator {
-    init {
-        assert(term.numConstants == termConstants.size)
-    }
-
-    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
-        return MutatedFun(f * (C() + (C() * term)), const + 1.0 + 0.0 + termConstants)
-    }
-}
-
-class AddTermPowOfOneMutator(val term: GPFunction, val termConstants: List<Double>) : Mutator {
-    init {
-        assert(term.numConstants == termConstants.size)
-    }
-
-    override fun mutate(const: List<Double>, f: GPFunction): MutatedFun {
-        return MutatedFun(f pow (C() + (C() * term)), const + 1.0 + 0.0 + termConstants)
     }
 }
 
